@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -7,21 +8,21 @@ using Avalonia.Interactivity;
 
 class Eco
 {
-    const double GRASS_START = 1;
-    const double GRASS_GROW = 0.7;
-    public const double GRASS_LIMIT = 10;
-    const double GRASS_BECOME_PARENT = 5;
-
+    const double GRASS_START = 1.5;
     public double GrassSumValue = 0;
+    const double GRASS_GROW = 0.8; // 0.6 надо
+    public const double GRASS_LIMIT = 30;
+    public readonly double MAX_SUM_GRASS;
+    const double GRASS_BECOME_PARENT = 7;
 
-    const double BUNNY_START = 6;
+    const double BUNNY_START = 15;
     const double BUNNY_SPEND = 1;
-    const double BUNNY_DIVIDED = 30;
+    const double BUNNY_DIVIDED = 95;
     const double BUNNY_EAT = 5;
 
-    const double WOLF_START = 350;
-    const double WOLF_SPEND = 3;
-    const double WOLF_DIVIDED = 400;
+    const double WOLF_START = 120;
+    const double WOLF_SPEND = 2;
+    const double WOLF_DIVIDED = 180;
 
     public int Width { get; init; }
     public int Height { get; init; }
@@ -35,6 +36,8 @@ class Eco
     {
         Width = wd;
         Height = hg;
+
+        MAX_SUM_GRASS = wd * hg * GRASS_LIMIT;
 
         //создаем поле
         grass = new Grass[wd, hg];
@@ -66,11 +69,13 @@ class Eco
         //рост -------------------------------------------------------------------
         for (int x = 0; x < Width; x++)
             for (int y = 0; y < Height; y++)
+            {
+                // if (grass[x, y].Value > 0)
                 if (grass[x, y].Value > 0 && grass[x, y].Value < GRASS_LIMIT)
                 {
                     grass[x, y].Value += GRASS_GROW;
-                    // GrassSumValue += GRASS_GROW;
                 }
+            }
 
         //распространение травы
         for (int x = 0; x < Width; x++)
@@ -121,7 +126,7 @@ class Eco
             for (int i = 0; i < 5; i++)
             {
                 dx = rnd.Next(-1, 2);
-                dy = rnd.Next(-1, 2);    
+                dy = rnd.Next(-1, 2);
                 if (b.X + dx >= 0 && b.Y + dy >= 0 && b.X + dx < Width && b.Y + dy < Height)
                 {
                     if (grass[b.X + dx, b.Y + dy].Value > grass[b.X, b.Y].Value)
@@ -132,7 +137,7 @@ class Eco
             }
             b.X += dx;
             b.Y += dy;
-            
+
             if (b.X <= 0) b.X = 0;
             if (b.Y <= 0) b.Y = 0;
             if (b.X >= Width) b.X = Width - 1;
@@ -175,12 +180,25 @@ class Eco
         // движение
         foreach (var w in wolves)
         {
-            w.X += rnd.Next(-2, 3);
-            w.Y += rnd.Next(-2, 3);
-            if (w.X <= 0) w.X = 0;
-            if (w.Y <= 0) w.Y = 0;
-            if (w.X >= Width) w.X = Width - 1;
-            if (w.Y >= Height) w.Y = Height - 1;
+            var bunnyCell = HasBunnyNeighbour(w.X, w.Y);
+            if (bunnyCell.Item1 == true)
+            {
+                w.X = bunnyCell.Item2;
+                w.Y = bunnyCell.Item3;
+            }
+            else
+            {
+                int dx = rnd.Next(-1, 2);
+                int dy = rnd.Next(-1, 2);
+
+                w.X += dx;
+                w.Y += dy;
+
+                if (w.X <= 0) w.X = 0;
+                if (w.Y <= 0) w.Y = 0;
+                if (w.X >= Width) w.X = Width - 1;
+                if (w.Y >= Height) w.Y = Height - 1;
+            }
         }
 
         // подсчет количества травы
@@ -198,10 +216,50 @@ class Eco
             (GetGrass(x, y - 1)?.Value ?? 0) >= GRASS_BECOME_PARENT;
     }
 
+    (bool, int, int) HasBunnyNeighbour(int x, int y)
+    {
+        for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                var xx = x + dx;
+                var yy = y + dy;
+                if (xx >= 0 && yy >= 0 && xx < Width && yy < Height)
+                {
+                    foreach (var b in bunnies)
+                        if (b.X == xx && b.Y == yy)
+                            return (true, xx, yy);
+                }
+            }
+        return (false, 0, 0);
+    }
+
+    (bool, int, int) HasGrassNeighbour(int x, int y)
+    {
+        for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                var xx = x + dx;
+                var yy = y + dy;
+                if (xx >= 0 && yy >= 0 && xx < Width && yy < Height)
+                {
+                    if (grass[xx, yy].Value > 0)
+                        return (true, xx, yy);
+                }
+            }
+        return (false, 0, 0);
+    }
+    
+
     Grass GetGrass(int x, int y)
     {
         if (x < 0 || y < 0 || x >= Width || y >= Height)
             return null;
         return grass[x, y];
+    }
+
+    public void CreateNewRndGrass(int amount)
+    {
+        for (int i = 0; i < amount; i++)
+            grass[rnd.Next(Width), rnd.Next(Height)].Value = GRASS_LIMIT;
     }
 }
