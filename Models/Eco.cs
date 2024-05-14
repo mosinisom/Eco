@@ -13,16 +13,19 @@ class Eco
     const double GRASS_GROW = 0.8; // 0.6 надо
     public const double GRASS_LIMIT = 30;
     public readonly double MAX_SUM_GRASS;
+    public double MAX_SESSION_GRASS;
     const double GRASS_BECOME_PARENT = 7;
 
     const double BUNNY_START = 15;
     const double BUNNY_SPEND = 1;
     const double BUNNY_DIVIDED = 95;
     const double BUNNY_EAT = 5;
+    public int MAX_SESSION_BUNNIES;
 
     const double WOLF_START = 120;
     const double WOLF_SPEND = 2;
     const double WOLF_DIVIDED = 180;
+    public int MAX_SESSION_WOLVES;
 
     public int Width { get; init; }
     public int Height { get; init; }
@@ -58,6 +61,10 @@ class Eco
         wolves = new List<Wolf>();
         for (int i = 0; i < ws; i++)
             wolves.Add(new Wolf() { Value = WOLF_START, X = rnd.Next(wd), Y = rnd.Next(hg) });
+
+        MAX_SESSION_BUNNIES = bs;
+        MAX_SESSION_WOLVES = ws;
+        MAX_SESSION_GRASS = gs;
     }
 
     public void SimulateStep()
@@ -115,6 +122,9 @@ class Eco
                 var y = bunnies[i].Y + rnd.Next(-1, 2);
                 if (x >= 0 && y >= 0 && x < Width && y < Height)
                     bunnies.Add(new Bunny() { Value = d, X = x, Y = y });
+
+                if(bunnies.Count > MAX_SESSION_BUNNIES)
+                    MAX_SESSION_BUNNIES = bunnies.Count;
             }
         //движение
         foreach (var b in bunnies)
@@ -176,6 +186,9 @@ class Eco
                 var d = wolves[i].Value / 2;
                 wolves[i].Value = d;
                 wolves.Add(new Wolf() { Value = d, X = wolves[i].X, Y = wolves[i].Y });
+
+                if(wolves.Count > MAX_SESSION_WOLVES)
+                    MAX_SESSION_WOLVES = wolves.Count;
             }
         // движение
         foreach (var w in wolves)
@@ -204,7 +217,11 @@ class Eco
         // подсчет количества травы
         for (int x = 0; x < Width; x++)
             for (int y = 0; y < Height; y++)
-                GrassSumValue += grass[x, y].Value;
+                {
+                    GrassSumValue += grass[x, y].Value;
+                    if(GrassSumValue > MAX_SESSION_GRASS)
+                        MAX_SESSION_GRASS = Math.Round(GrassSumValue, 2);
+                }
     }
 
     bool HasParentGrassNeighbour(int x, int y)
@@ -261,5 +278,23 @@ class Eco
     {
         for (int i = 0; i < amount; i++)
             grass[rnd.Next(Width), rnd.Next(Height)].Value = GRASS_LIMIT;
+    }
+
+    public void AddGrass(int x, int y)
+    {
+        if (x >= 0 && y >= 0 && x < Width && y < Height)
+            grass[x, y].Value = GRASS_LIMIT;
+    }
+
+    public void AddBunny(int x, int y)
+    {
+        if (x >= 0 && y >= 0 && x < Width && y < Height)
+            bunnies.Add(new Bunny() { Value = BUNNY_START, X = x, Y = y });
+    }
+
+    public void AddWolf(int x, int y)
+    {
+        if (x >= 0 && y >= 0 && x < Width && y < Height)
+            wolves.Add(new Wolf() { Value = WOLF_START, X = x, Y = y });
     }
 }

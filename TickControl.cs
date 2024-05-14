@@ -11,6 +11,12 @@ namespace AvaloniaCurves;
 
 public class TickControl : Control
 {
+
+    private static readonly SolidColorBrush GrassBrush = new SolidColorBrush(Color.FromRgb(0, 200, 0), 1);
+    private static readonly SolidColorBrush EmptyBrush = new SolidColorBrush(Color.FromRgb(255, 255, 255), 1);
+    private static readonly SolidColorBrush BunnyLightGrayBrush = new SolidColorBrush(Color.FromRgb(192, 192, 192), 1);
+    private static readonly SolidColorBrush BunnyLightSlateGrayBrush = new SolidColorBrush(Color.FromRgb(119, 136, 153), 1);
+    private static readonly SolidColorBrush WolfBrush = new SolidColorBrush(Color.FromRgb(255, 0, 0), 1);
     Eco eco;
     private DispatcherTimer timer;
     private Queue<double> grassValues;
@@ -61,6 +67,68 @@ public class TickControl : Control
             }
 
         };
+
+
+        double dx = 700.0 / eco.Width;
+        double dy = 700.0 / eco.Height;
+
+        this.PointerPressed += (sender, e) =>
+        {
+            var position = e.GetPosition(this);
+            int x = (int)(position.X / dx);
+            int y = (int)(position.Y / dy);
+
+            MainWindow mainWindow = GetMainWindow();
+
+            if (mainWindow == null || mainWindow.currentMode == null)
+                return;
+
+            MainWindow.Mode currentMode = mainWindow.currentMode;
+
+            switch (currentMode)
+            {
+                case MainWindow.Mode.Grass:
+                    eco.AddGrass(x, y);
+                    break;
+                case MainWindow.Mode.Bunny:
+                    eco.AddBunny(x, y);
+                    break;
+                case MainWindow.Mode.Wolf:
+                    eco.AddWolf(x, y);
+                    break;
+            }
+        };
+
+        this.PointerMoved += (sender, e) =>
+        {
+            if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            {
+                var position = e.GetPosition(this);
+                int x = (int)(position.X / dx);
+                int y = (int)(position.Y / dy);
+
+                MainWindow mainWindow = GetMainWindow();
+
+                if (mainWindow == null || mainWindow.currentMode == null)
+                    return;
+
+                MainWindow.Mode currentMode = mainWindow.currentMode;
+
+                switch (currentMode)
+                {
+                    case MainWindow.Mode.Grass:
+                        eco.AddGrass(x, y);
+                        break;
+                    case MainWindow.Mode.Bunny:
+                        eco.AddBunny(x, y);
+                        break;
+                    case MainWindow.Mode.Wolf:
+                        eco.AddWolf(x, y);
+                        break;
+                }
+            }
+        };
+
     }
 
     public void StartTimer()
@@ -96,15 +164,15 @@ public class TickControl : Control
             for (int y = 0; y < eco.Width; y++)
             {
                 var value = eco.grass[x, y].Value;
-                byte r, g, b;
-                r = g = b = 255;
+                SolidColorBrush brush;
                 if (value > 0)
                 {
-                    r = b = 0;
-                    g = (byte)(200 - value / Eco.GRASS_LIMIT * 100);
+                    brush = GrassBrush;
                 }
-
-                var brush = new SolidColorBrush(Color.FromRgb(r, g, b), 1);
+                else
+                {
+                    brush = EmptyBrush;
+                }
 
                 ctx.DrawRectangle(brush, null, new Rect(dx * x, dy * y, dx, dy));
             }
@@ -115,13 +183,11 @@ public class TickControl : Control
         {
             if (i % 2 == 0)
             {
-                var brush = Brushes.LightSlateGray;
-                ctx.DrawEllipse(brush, null, new Rect(dx * bunny.X + 2, dy * bunny.Y + 2, dx - 3, dy - 3));
+                ctx.DrawEllipse(BunnyLightGrayBrush, null, new Rect(dx * bunny.X + 2, dy * bunny.Y + 2, dx - 3, dy - 3));
             }
             else
             {
-                var brush = Brushes.LightGray;
-                ctx.DrawEllipse(brush, null, new Rect(dx * bunny.X + 2, dy * bunny.Y + 2, dx - 3, dy - 3));
+                ctx.DrawEllipse(BunnyLightSlateGrayBrush, null, new Rect(dx * bunny.X + 2, dy * bunny.Y + 2, dx - 3, dy - 3));
             }
             i++;
         }
@@ -129,11 +195,10 @@ public class TickControl : Control
         // рисуем волков
         foreach (var wolf in eco.wolves)
         {
-            var brush = Brushes.Red;
-            ctx.DrawEllipse(brush, null, new Rect(dx * wolf.X + 1, dy * wolf.Y + 1, dx - 2, dy - 2));
+            ctx.DrawEllipse(WolfBrush, null, new Rect(dx * wolf.X + 1, dy * wolf.Y + 1, dx - 2, dy - 2));
         }
 
-        var text = $"Grass: {grassCounter}; Bunnies: {bunnyCounter}; Wolves: {wolfCounter}";
+        var text = $"Grass: {grassCounter} ({eco.MAX_SESSION_GRASS}); Bunnies: {bunnyCounter} ({eco.MAX_SESSION_BUNNIES}); Wolves: {wolfCounter} ({eco.MAX_SESSION_WOLVES})";
         var formattedText = new FormattedText(
             text,
             CultureInfo.CurrentCulture,
@@ -154,13 +219,32 @@ public class TickControl : Control
 
         for (int index = 0; index < bunnyValues.Count; index++)
         {
-            ctx.DrawRectangle(new SolidColorBrush(Color.FromArgb(200, 128, 128, 128)), null, new Rect(710 + index * 5, 700 - bunnyValues.ElementAt(index) / 4, 5, bunnyValues.ElementAt(index) / 4));
+            ctx.DrawRectangle(new SolidColorBrush(Color.FromArgb(200, 128, 128, 128)), null, new Rect(710 + index * 5, 700 - bunnyValues.ElementAt(index) / 5, 5, bunnyValues.ElementAt(index) / 5));
         }
+
 
         for (int index = 0; index < wolfValues.Count; index++)
         {
             ctx.DrawRectangle(new SolidColorBrush(Color.FromArgb(160, 255, 0, 0)), null, new Rect(710 + index * 5, 700 - wolfValues.ElementAt(index) / 4, 5, wolfValues.ElementAt(index) / 4));
         }
 
+    }
+
+
+    private MainWindow GetMainWindow()
+    {
+        MainWindow mainWindow = null;
+        var parent = this.Parent;
+        while (parent != null)
+        {
+            if (parent is MainWindow)
+            {
+                mainWindow = (MainWindow)parent;
+                break;
+            }
+            parent = parent.Parent;
+        }
+
+        return mainWindow;
     }
 }
