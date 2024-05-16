@@ -72,7 +72,6 @@ class Eco
         GrassSumValue = 0;
 
 
-
         //рост -------------------------------------------------------------------
         for (int x = 0; x < Width; x++)
             for (int y = 0; y < Height; y++)
@@ -98,7 +97,6 @@ class Eco
             {
                 var v = Math.Min(grass[b.X, b.Y].Value, BUNNY_EAT);
                 grass[b.X, b.Y].Value -= v;
-                // GrassSumValue -= v;
                 b.Value += v;
             }
             b.Value -= BUNNY_SPEND;
@@ -117,11 +115,7 @@ class Eco
             {
                 var d = bunnies[i].Value / 2;
                 bunnies[i].Value = d;
-                // bunnies.Add(new Bunny() { Value = d, X = bunnies[i].X, Y = bunnies[i].Y });
-                var x = bunnies[i].X + rnd.Next(-1, 2);
-                var y = bunnies[i].Y + rnd.Next(-1, 2);
-                if (x >= 0 && y >= 0 && x < Width && y < Height)
-                    bunnies.Add(new Bunny() { Value = d, X = x, Y = y });
+                bunnies.Add(new Bunny() { Value = d, X = bunnies[i].X, Y = bunnies[i].Y });
 
                 if(bunnies.Count > MAX_SESSION_BUNNIES)
                     MAX_SESSION_BUNNIES = bunnies.Count;
@@ -133,7 +127,7 @@ class Eco
             dx = rnd.Next(-1, 2);
             dy = rnd.Next(-1, 2);
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 4; i++)
             {
                 dx = rnd.Next(-1, 2);
                 dy = rnd.Next(-1, 2);
@@ -267,7 +261,7 @@ class Eco
     }
     
 
-    Grass GetGrass(int x, int y)
+    Grass? GetGrass(int x, int y)
     {
         if (x < 0 || y < 0 || x >= Width || y >= Height)
             return null;
@@ -296,5 +290,14 @@ class Eco
     {
         if (x >= 0 && y >= 0 && x < Width && y < Height)
             wolves.Add(new Wolf() { Value = WOLF_START, X = x, Y = y });
+    }
+
+    public void Clear()
+    {
+        for (int x = 0; x < Width; x++)
+            for (int y = 0; y < Height; y++)
+                grass[x, y].Value = 0;
+        bunnies.Clear();
+        wolves.Clear();
     }
 }

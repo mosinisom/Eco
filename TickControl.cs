@@ -29,12 +29,12 @@ public class TickControl : Control
     }
 
     // 26.04 - 20
-    readonly int fieldSize = 90;
+    readonly int fieldSize = 80;
     // 23.04 - 80
-    readonly int grassStart = 900;
+    readonly int grassStart = 0;
     // 24.04 - 41
-    readonly int bunnyStart = 441;
-    readonly int wolfStart = 40;
+    readonly int bunnyStart = 0;
+    readonly int wolfStart = 0;
 
 
     public TickControl()
@@ -61,7 +61,9 @@ public class TickControl : Control
             grassValues.Enqueue(eco.GrassSumValue);
             bunnyValues.Enqueue(eco.bunnies.Count);
             wolfValues.Enqueue(eco.wolves.Count);
-            if (grassRndGrow % 50 == 0)
+
+            MainWindow mainWindow = GetMainWindow();
+            if (mainWindow != null && mainWindow.isRandomGrassEnabled && grassRndGrow % 50 == 0)
             {
                 eco.CreateNewRndGrass(30);
             }
@@ -126,7 +128,13 @@ public class TickControl : Control
                         eco.AddWolf(x, y);
                         break;
                 }
+                InvalidateVisual();
             }
+        };
+
+        this.PointerReleased += (sender, e) =>
+        {
+            InvalidateVisual();
         };
 
     }
@@ -175,6 +183,7 @@ public class TickControl : Control
                 }
 
                 ctx.DrawRectangle(brush, null, new Rect(dx * x, dy * y, dx, dy));
+                
             }
 
         //рисуем кроликов
@@ -246,5 +255,11 @@ public class TickControl : Control
         }
 
         return mainWindow;
+    }
+
+    public void Clear()
+    {
+        eco.Clear();
+        InvalidateVisual();
     }
 }
